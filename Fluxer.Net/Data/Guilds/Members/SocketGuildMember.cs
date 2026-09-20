@@ -64,17 +64,15 @@ public class SocketGuildMember : GuildMember
         ChannelPermission deniedPermissions = 0UL, allowedPermissions = 0UL;
 
         // Check role overwrites.
-        foreach (SocketRole r in Roles)
+        // Permission overwrites are ordered from highest to lowest rank. We need to iterate in reverse.
+        foreach (var overwrite in channel.PermissionOverwrites.Reverse())
         {
-            if (r.Id == Guild.Id)
-                continue;
+            if (overwrite.Id == Guild.Id) continue;
+            if (overwrite.Type != PermissionOverwriteType.Role) continue;
+            if (!RoleIds.Contains(overwrite.Id)) continue;
 
-            PermissionOverwrite? role = channel.PermissionOverwrites.FirstOrDefault(x => x.Type == PermissionOverwriteType.Role && x.Id == r.Id);
-            if (role != null)
-            {
-                deniedPermissions |= role.Deny.RawValue;
-                allowedPermissions |= role.Allow.RawValue;
-            }
+            deniedPermissions |= overwrite.Deny.RawValue;
+            allowedPermissions |= overwrite.Allow.RawValue;
         }
         resolvedPermissions = (resolvedPermissions & ~deniedPermissions) | allowedPermissions;
 
